@@ -1,0 +1,118 @@
+---
+title: "machine_learning_project"
+author: "nesma"
+date: "7-1-2018"
+output: 
+        html_document: default
+        md_document: default
+---
+
+##Prediction Assignment Writeup
+#introduction
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.
+
+
+#library
+```{r   echo=TRUE,message=FALSE,warning=FALSE}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(corrplot)
+library(rattle)
+library(knitr)
+library(gbm)
+library(markdown)
+```
+#LOAD DATA
+```{r   echo=TRUE,message=FALSE,warning=FALSE}
+read_train=read.csv("F:/data science specialist/course8/pml-training.csv")
+read_test=read.csv("F:/data science specialist/course8/pml-testing.csv")
+
+```
+ 
+
+found the diagnoses predictors that have one unique value (i.e. are zero variance predictors)
+```{r}
+NZV <- nearZeroVar(read_train)
+read_train <- read_train[, -NZV]
+```
+
+Remove variables with missing values
+```{r}
+var_with_NA   <- sapply(read_train, function(x) mean(is.na(x))) > 0.95
+read_train <- read_train[, var_with_NA==FALSE]
+read_train <- read_train[, -(1:5)]
+```
+
+partition the training data into two part (70% train , 30% test to test the model)
+```{r }
+inTrain  <- createDataPartition(read_train$classe, p=0.7, list=FALSE)
+Train_data <- read_train[inTrain, ]
+Test_data <- read_train[-inTrain, ]
+ #dim(Train_data);  dim(Test_data)
+```
+
+# buliding prediction model in different technique
+#1 Random Forest Model
+```{r}
+set.seed(12345)
+controlRF <- trainControl(method="cv", number=3, verboseIter=FALSE)
+modFitRandForest <- train(classe ~ ., data=Train_data, method="rf",
+                       trControl=controlRF)
+```
+# using test data
+```{r}
+predictRandForest <- predict(modFitRandForest, newdata=Test_data)
+confMatRandForest <- confusionMatrix(predictRandForest, Test_data$classe)
+confMatRandForest$overall['Accuracy']
+```
+#Ploting Matrix Results to Random Forest Model
+```{r}
+#plot(confMatRandForest$table, col = "beige",
+ #main = paste("Random Forest - Accuracy =",
+ #              round(confMatRandForest$overall['Accuracy'], 4)))
+```
+
+#2 Decision Trees Method
+```{r}
+modFitDecTree <- rpart(classe ~ ., data=Train_data, method="class")
+suppressWarnings(fancyRpartPlot(modFitDecTree))
+predictDecTree <- predict(modFitDecTree, newdata=Test_data, type="class")
+confMatDecTree <- confusionMatrix(predictDecTree, Test_data$classe)
+confMatDecTree$overall['Accuracy']
+```
+
+# 3 Generalized Boosted Model
+```{r}
+controlGBM <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
+modFitGBM  <- train(classe ~ ., data=Train_data, method = "gbm",
+                    trControl = controlGBM, verbose = FALSE)
+predictGBM <- predict(modFitGBM, newdata=Test_data)
+confMatGBM <- confusionMatrix(predictGBM, Test_data$classe)
+confMatGBM$overall['Accuracy']
+```
+# 4 Cross Validation Model
+```{r}
+cv3 = trainControl(method="cv",number=3,allowParallel=TRUE,verboseIter=TRUE)
+modrf = train(classe~., data=Train_data, method="rf",trControl=cv3)
+modtree = train(classe~.,data=Train_data,method="rpart",trControl=cv3)
+prf=predict(modrf,Test_data)
+ptree=predict(modtree,Test_data)
+table(prf,ptree)
+confMatcv<- confusionMatrix(prf, Test_data$classe)
+confMatcv$overall['Accuracy']
+```
+conclusion 
+
+the accuracy of Random Forest Model is .997
+the accuracy of  Decision Trees Method is .79
+the accuracy of Generalized Boosted Model is .988
+the accuracy of Cross Validation Model is .997
+
+so my opinion that use the cross validation random forest model
+
+```{r}
+answers=predict(modrf,read_test)
+answers
+```
