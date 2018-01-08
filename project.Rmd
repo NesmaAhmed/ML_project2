@@ -2,9 +2,9 @@
 title: "machine_learning_project"
 author: "nesma"
 date: "7-1-2018"
-output: 
-        html_document: default
-        md_document: default
+output:
+  html_document: default
+  md_document: default
 ---
 
 ##Prediction Assignment Writeup
@@ -105,10 +105,6 @@ confMatcv$overall['Accuracy']
 ```
 conclusion 
 
-the accuracy of Random Forest Model is .997
-the accuracy of  Decision Trees Method is .79
-the accuracy of Generalized Boosted Model is .988
-the accuracy of Cross Validation Model is .997
 
 so my opinion that use the cross validation random forest model
 
